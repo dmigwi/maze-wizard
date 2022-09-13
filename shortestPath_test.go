@@ -24,16 +24,20 @@ func TestProcessShortestPath(t *testing.T) {
 			input:  []byte(`{"forward": "tiger", "left": "ogre", "right": "demon"}`),
 			output: []string{},
 		},
+		{
+			input:  []byte(`{"left": "tiger", "forward": {"forward": "exit"}, "right": "exit"}`),
+			output: []string{"right"},
+		},
 	}
 
 	for _, d := range data {
 		res, err := findShortestPath(d.input)
 		if err != nil {
-			t.Errorf("Expected no but found error;  %v \n", err)
+			t.Fatalf("Expected no but found error;  %v \n", err)
 		}
 
 		if !reflect.DeepEqual(res, d.output) {
-			t.Errorf("The two arrays; (%v) and (%v) are not equal", res, d.output)
+			t.Fatalf("The two arrays; (%v) and (%v) are not equal", res, d.output)
 		}
 	}
 }

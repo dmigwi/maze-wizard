@@ -11,15 +11,17 @@ import (
 	"strings"
 
 	"golang.org/x/exp/maps"
-	// "golang.org/x/exp/maps"
 )
 
 var port uint
 
 const (
-	MinPort uint16 = 1024
-	MaxPort uint16 = 49151
+	// MINPORT defines the minimum port value allowed to serve.
+	MINPORT uint16 = 1024
+	// MAXPORT defines the maximum port value allowed to server
+	MAXPORT uint16 = 49151
 
+	// invalidSearchReply defines the default search return value if an error occures.
 	invalidSearchReply = "Sorry"
 )
 
@@ -27,6 +29,7 @@ func init() {
 	flag.UintVar(&port, "port", 8080, "Default port to be used to run the server")
 }
 
+// NotFound returns a customized response for the non supported routes.
 func NotFound(w http.ResponseWriter, req *http.Request) {
 	notFoundHandler(w)
 }
@@ -35,6 +38,7 @@ func notFoundHandler(w http.ResponseWriter) {
 	io.WriteString(w, invalidSearchReply)
 }
 
+// root handles the default root handler function.
 func root(w http.ResponseWriter, req *http.Request) {
 	body, err := ioutil.ReadAll(req.Body)
 	if err != nil {
@@ -61,8 +65,8 @@ func main() {
 
 	log.Println("Beginning the Maze Wizard Path finder")
 
-	if port < uint(MinPort) || port > uint(MaxPort) {
-		log.Fatalf("Invalid port of %d was found. Support range is only from %d to %d", port, MinPort, MaxPort)
+	if port < uint(MINPORT) || port > uint(MAXPORT) {
+		log.Fatalf("Invalid port of %d was found. Support range is only from %d to %d", port, MINPORT, MAXPORT)
 	}
 
 	http.HandleFunc("/", root)
@@ -74,36 +78,46 @@ func main() {
 	log.Printf("Serving on port %d \n", port)
 }
 
+// isMazeEnd return true if the maze exit is found in the path
 func isMazeEnd(loc string) bool {
 	return strings.ToLower(loc) == "exit"
 }
 
+// findShortestPath accepts the maze map and returns the shortest path from the
+// start position to the exit.
 func findShortestPath(body []byte) ([]string, error) {
 	var data = make(map[string]interface{})
 	if err := json.Unmarshal(body, &data); err != nil {
 		return nil, err
 	}
 
-	var shortesPath []string
+	var shortestPath []string
 	for k, v := range data {
 		info := findPath(k, v, []string{})
 		if info != nil {
 			info = append([]string{k}, info...)
+		} else {
+			// ignore empty paths returned
+			continue
 		}
-		if len(shortesPath) == 0 {
-			shortesPath = info
-		} else if len(shortesPath) == 0 && len(info) < len(shortesPath) {
-			shortesPath = info
+		if len(shortestPath) == 0 {
+			shortestPath = info
+		} else if len(info) < len(shortestPath) {
+			shortestPath = info
 		}
 	}
 
-	if shortesPath == nil {
-		shortesPath = []string{}
+	// initiaze the path array if its still null
+	if shortestPath == nil {
+		shortestPath = []string{}
 	}
 
-	return shortesPath, nil
+	return shortestPath, nil
 }
 
+// findPath for the provided starting position and all possible routes to check
+// it returns a path the maze exit if exists otherwise it returns null.
+// It recursively navigates through all the paths.
 func findPath(startPos string, data interface{}, info []string) []string {
 	str, ok := data.(string)
 	if ok && isMazeEnd(str) {

@@ -71,11 +71,12 @@ func main() {
 
 	http.HandleFunc("/", root)
 
+	log.Printf("Serving on port :%d \n", port)
+
 	url := fmt.Sprintf(":%d", port)
 	if err := http.ListenAndServe(url, nil); err != nil {
 		log.Fatalf("Serving on %s failed: Error %v", url, err)
 	}
-	log.Printf("Serving on port %d \n", port)
 }
 
 // isMazeEnd return true if the maze exit is found in the path
@@ -97,7 +98,7 @@ func findShortestPath(body []byte) ([]string, error) {
 		if info != nil {
 			info = append([]string{k}, info...)
 		} else {
-			// ignore empty paths returned
+			// ignore empty path returned
 			continue
 		}
 		if len(shortestPath) == 0 {

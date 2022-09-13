@@ -13,12 +13,11 @@ type testdata struct {
 func TestProcessShortestPath(t *testing.T) {
 	data := []testdata{
 		{
-			input: []byte(`{"forward": "tiger", "left": {"forward": {"upstairs": "exit"}, "left": "dragon"}, "right": {"forward":
-		"dead end"}}`),
+			input:  []byte(`{"forward": "tiger", "left": {"forward": {"upstairs": "exit"}, "left": "dragon"}, "right": {"forward":"dead end"}}`),
 			output: []string{"left", "forward", "upstairs"},
 		},
 		{
-			input:  []byte(`{“forward”: “exit”}`),
+			input:  []byte(`{"forward": "exit"}`),
 			output: []string{"forward"},
 		},
 		{
@@ -27,10 +26,14 @@ func TestProcessShortestPath(t *testing.T) {
 		},
 	}
 
-	for _, data := range data {
-		res := processShortestPath(data.input, [][]string{})
-		if !reflect.DeepEqual(res, data.output) {
-			t.Errorf("The two arrays; (%v) and (%v) are not equal", res, data.output)
+	for _, d := range data {
+		res, err := findShortestPath(d.input)
+		if err != nil {
+			t.Errorf("Expected no but found error;  %v \n", err)
+		}
+
+		if !reflect.DeepEqual(res, d.output) {
+			t.Errorf("The two arrays; (%v) and (%v) are not equal", res, d.output)
 		}
 	}
 }

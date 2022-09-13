@@ -9,6 +9,9 @@ import (
 	"log"
 	"net/http"
 	"strings"
+
+	"golang.org/x/exp/maps"
+	// "golang.org/x/exp/maps"
 )
 
 var port uint
@@ -39,13 +42,12 @@ func root(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	var info [][]string
-	path := processShortestPath(body, info)
-	// if err != nil {
-	// 	log.Printf("Failed to process the shortest path :Error;  %v \n", err)
-	// }
+	path, err := findShortestPath(body)
+	if err != nil {
+		log.Printf("Failed to process the shortest path :Error;  %v \n", err)
+	}
 
-	if len(path) == 0 {
+	if err != nil || len(path) == 0 {
 		notFoundHandler(w)
 		return
 	}
@@ -76,27 +78,49 @@ func isMazeEnd(loc string) bool {
 	return strings.ToLower(loc) == "exit"
 }
 
-// var stack = make([]map[string]string, 0)
-
-func processShortestPath(mazeMap []byte, info [][]string) [][]string {
-	var data = make(map[string]string)
-	if err := json.Unmarshal(mazeMap, &data); err != nil {
-		return nil
+func findShortestPath(body []byte) ([]string, error) {
+	var data = make(map[string]interface{})
+	if err := json.Unmarshal(body, &data); err != nil {
+		return nil, err
 	}
 
+	var shortesPath []string
 	for k, v := range data {
-		if isMazeEnd(k) {
-			return [][]string{[]string{k}}
+		info := findPath(k, v, []string{})
+		if info != nil {
+			info = append([]string{k}, info...)
 		}
-
-		if isMazeEnd(v) {
-			return [][]string{[]string{k}, []string{v}}
+		if len(shortesPath) == 0 {
+			shortesPath = info
+		} else if len(shortesPath) == 0 && len(info) < len(shortesPath) {
+			shortesPath = info
 		}
-
-		if strings.ContainsAny(v, "{}") {
-			return append(info, processShortestPath([]byte(v), info)...)
-		}
-
 	}
-	return info
+
+	if shortesPath == nil {
+		shortesPath = []string{}
+	}
+
+	return shortesPath, nil
+}
+
+func findPath(startPos string, data interface{}, info []string) []string {
+	str, ok := data.(string)
+	if ok && isMazeEnd(str) {
+		return []string{}
+	}
+
+	val, ok := data.(map[string]interface{})
+	if ok {
+		startPos = maps.Keys(val)[0]
+		data = maps.Values(val)[0]
+		p := findPath(startPos, data, info)
+		if p == nil {
+			return nil
+		}
+		info = append(info, startPos)
+		return append(info, p...)
+	}
+
+	return nil
 }
